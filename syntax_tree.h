@@ -17,6 +17,10 @@ extern Treenode *root;
 
 Treenode *newnode();
 void treeAddChild(Treenode*, Treenode*);
+Treenode *TreeFirstChild(Treenode *);
+Treenode *TreeLastChild(Treenode *);
+Treenode *TreeKthChild(Treenode *, int);
+Treenode *TreeLastKthChild(Treenode *, int)
 void print(Treenode*, int);
 
 #endif
