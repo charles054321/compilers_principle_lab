@@ -7,7 +7,5 @@ char *toArray(const char*);
 
 extern int errorstatus;
 
-#define name_equal(node, token) \
-	((node != NULL) && (strcmp((node.name), str(token)) == 0))
 
 #endif

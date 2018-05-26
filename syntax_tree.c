@@ -28,32 +28,32 @@ void treeAddChild(Treenode *now, Treenode *p){
 
 Treenode *TreeFirstChild(Treenode *p){
 	assert(p != NULL);
-	assert(p.child != p.child.next);
-	return p.child.next;
+	assert(p->child != p->child->next);
+	return p->child->next;
 }
 
 Treenode *TreeLastChild(Treenode *p){
 	assert(p != NULL);
-	assert(p.child != p.child.next);
-	return p.child.prev;
+	assert(p->child != p->child->next);
+	return p->child->prev;
 }
 
 Treenode *TreeKthChild(Treenode *p, int k){
 	assert(p != NULL);
-	assert(p.child != p.child.next);
-	Treenode *head = p.child;
+	assert(p->child != p->child->next);
+	Treenode *head = p->child;
 	for(;k > 0;k--){
-		head = head.next;
+		head = head->next;
 	}
 	return head;
 }
 
 Treenode *TreeLastKthChild(Treenode *p, int k){
 	assert(p != NULL);
-	assert(p.child != p.child.next);
-	Treenode *head = p.child;
+	assert(p->child != p->child->next);
+	Treenode *head = p->child;
 	for(;k > 0;k--){
-		head = head.prev;
+		head = head->prev;
 	}
 	return head;
 }
@@ -90,7 +90,7 @@ void print(Treenode *head, int level){
 			print(p, level + 1);
 		}
 	}
-}		
+}
 
 
 

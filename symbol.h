@@ -8,10 +8,19 @@ typedef enum{
 }TypeKind;
 
 typedef enum{
-	VAR, STRUCT, FUNC
+	VAR, STRUCT, FUNCTION
 }SymbolKind;
 
-typedef struct TYPE{
+typedef struct FieldList_ FieldList;
+typedef struct TYPE_ TYPE;
+
+struct FieldList_{
+	char *name;
+	TYPE *type;
+	struct FieldList_ *next, *prev;
+};
+
+typedef struct TYPE_{
 	TypeKind kind;
 	union{
 		int basic;
@@ -21,36 +30,30 @@ typedef struct TYPE{
 		}array;
 		FieldList structure;
 	};
-}TYPE;
+};
 
 extern TYPE *const TYPE_INT;
 extern TYPE *const TYPE_FLOAT;
-
-void TypeInit();
-
-bool TypeEqual(Type *, Type *);
-
-bool ArgsEqual(FieldList *, FieldList *);
-
-bool FuncEqual(FUNC *, FUNC *);
-
-void TypeRelease(Type *);
-
-void ArgsRelease(FieldList *);
-
-void FuncRelease(FUNC *);
-
-typedef struct FieldList{
-	char *name;
-	TYPE *type;
-	FieldList *next, *prev;
-}FieldList;
 
 typedef struct FUNC{
 	TYPE *retType;
 	FieldList args;
 	bool defined;
-}
+}FUNC;
+
+void TypeInit();
+
+bool TypeEqual(TYPE *, TYPE *);
+
+bool ArgsEqual(FieldList *, FieldList *);
+
+bool FuncEqual(FUNC *, FUNC *);
+
+void TypeRelease(TYPE *);
+
+void ArgsRelease(FieldList *);
+
+void FuncRelease(FUNC *);
 
 typedef struct Symbol{
 	char *name;
@@ -58,7 +61,7 @@ typedef struct Symbol{
 	union{
 		TYPE *type;
 		FUNC *func;
-	}
+	};
 	int id;
 	bool isRef;
 	int depth;
@@ -80,7 +83,7 @@ bool SymbolInsert(Symbol *);
 
 bool SymbolAtStackTop(const char *);
 
-Symbol SymbolFind(const char *);
+Symbol *SymbolFind(const char *);
 
 void SymbolRelease(Symbol *);
 
@@ -90,27 +93,8 @@ void SymbolStackPop();
 
 FieldList *FieldFind(FieldList *, const char *);
 
-void typeToStr(Type *, char *);
+void typeToStr(TYPE *, char *);
 
 void ArgsToStr(FieldList *, char *);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
