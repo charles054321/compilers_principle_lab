@@ -5,6 +5,7 @@
 void yyrestart();
 void yyparse();
 int errorstatus = 0;
+void AnalyseProgram(Treenode *);
 int main(int argc, char** argv){
 	if(argc <= 1) return 1;
 	FILE* f = fopen(argv[1], "r");
@@ -15,6 +16,6 @@ int main(int argc, char** argv){
 	}
 	yyrestart(f);
 	yyparse();
-	if (!errorstatus) print(root, 0);
+	if (!errorstatus) AnalyseProgram(root);
 	return 0;
 }
