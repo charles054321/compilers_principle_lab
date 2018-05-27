@@ -83,8 +83,9 @@ void FuncSymbolDelete(FuncSymbol *p) {
 
 void AnalyseProgram(Treenode *p){
 	assert(name_equal(p, Program));
+	//printf("a\n");
 	FuncSymbol_head.next = FuncSymbol_head.prev = &FuncSymbol_head;
-	Treenode *ExtDefList = p->child->next;
+	Treenode *ExtDefList = TreeFirstChild(p);
 	AnalyseExtDefList(ExtDefList);
 	while(&FuncSymbol_head != FuncSymbol_head.next){
 		FuncSymbol *q = FuncSymbol_head.next;
@@ -98,6 +99,7 @@ void AnalyseProgram(Treenode *p){
 
 static void AnalyseExtDefList(Treenode *p){
 	assert(name_equal(p, ExtDefList));
+	//printf("b\n");
 	AnalyseExtDef(TreeFirstChild(p));
 	Treenode *next = TreeLastChild(p);
 	if(name_equal(next, ExtDefList))
@@ -106,6 +108,7 @@ static void AnalyseExtDefList(Treenode *p){
 
 static void AnalyseExtDef(Treenode *p){
 	assert(name_equal(p, ExtDef));
+	//printf("c\n");
 	TYPE *type = AnalyseSpecifier(TreeFirstChild(p));
 	Treenode *second = TreeKthChild(p, 2);
 	Treenode *last = TreeLastChild(p);
@@ -127,6 +130,7 @@ static void AnalyseExtDef(Treenode *p){
 
 static void AnalyseExtDecList(Treenode *p, TYPE *type){
 	assert(name_equal(p, ExtDecList));
+	//printf("d\n");
 	Treenode *first = TreeFirstChild(p);
 	Treenode *last = TreeLastChild(p);
 	Dec *VarDec = AnalyseVarDec(first, type);
@@ -139,6 +143,7 @@ static void AnalyseExtDecList(Treenode *p, TYPE *type){
 
 static TYPE *AnalyseSpecifier(Treenode *p){
 	assert(name_equal(p, Specifier));
+	//printf("e\n");
 	Treenode *first = TreeFirstChild(p);
 	if(name_equal(first, TYPE)){
 		if(strcmp(first->text, "int") == 0) return TYPE_INT;
@@ -181,6 +186,7 @@ static TYPE *AnalyseSpecifier(Treenode *p){
 
 static void AnalyseDefList(Treenode *p, FieldList *list){
 	assert(name_equal(p, DefList));
+	//printf("f\n");
 	AnalyseDef(TreeFirstChild(p), list);
 	Treenode *last = TreeLastChild(p);
 	if(name_equal(last, DefList))
@@ -189,6 +195,7 @@ static void AnalyseDefList(Treenode *p, FieldList *list){
 
 static void AnalyseDef(Treenode *p, FieldList *list){
 	assert(name_equal(p, Def));
+	//printf("g\n");
 	Treenode *Specifier = TreeFirstChild(p);
 	Treenode *DecList = TreeKthChild(p, 2);
 	TYPE *type = AnalyseSpecifier(Specifier);
@@ -197,6 +204,7 @@ static void AnalyseDef(Treenode *p, FieldList *list){
 
 static void AnalyseDecList(Treenode *p, TYPE *type, FieldList *list){
 	assert(name_equal(p, DecList));
+	//printf("h\n");
 	Treenode *Dec = TreeFirstChild(p);
 	Treenode *last = TreeLastChild(p);
 	AnalyseDec(Dec, type, list);
@@ -206,10 +214,11 @@ static void AnalyseDecList(Treenode *p, TYPE *type, FieldList *list){
 
 static void AnalyseDec(Treenode *p, TYPE *type, FieldList *list){
 	assert(name_equal(p, Dec));
+	//printf("i\n");
 	Treenode *first = TreeFirstChild(p);
 	Treenode *last = TreeLastChild(p);
 	Dec *VarDec = AnalyseVarDec(first, type);
-	if(list){
+	if(list != NULL){
 		if(FieldFind(list, VarDec->name) != NULL)
 			semantic_error(15, p->lineno, VarDec->name);
 		else{
@@ -237,6 +246,7 @@ static void AnalyseDec(Treenode *p, TYPE *type, FieldList *list){
 
 static Dec *AnalyseVarDec(Treenode *p, TYPE *type){
 	assert(name_equal(p, VarDec));
+	//printf("j\n");
 	Treenode *first = TreeFirstChild(p);
 	if(name_equal(first, ID)){
 		Dec *dec = (Dec *) malloc(sizeof(Dec));
@@ -259,6 +269,7 @@ static Dec *AnalyseVarDec(Treenode *p, TYPE *type){
 static Symbol *AnalyseFunDec(Treenode *p, TYPE *type, bool isDef){
 	assert(name_equal(p, FunDec));
 	assert(type != NULL);
+	//printf("j\n");
 	FUNC *func = NewFunc(type);
 	Treenode *id = TreeFirstChild(p);
 	assert(name_equal(id, ID));
@@ -299,6 +310,7 @@ static Symbol *AnalyseFunDec(Treenode *p, TYPE *type, bool isDef){
 
 static void AnalyseVarList(Treenode *p, FieldList *field){
 	assert(name_equal(p, VarList));
+	//printf("k\n");
 	FieldList *arg = AnalyseParamDec(TreeFirstChild(p));
 	assert(arg != NULL);
 	arg->prev = field->prev;
@@ -313,14 +325,16 @@ static void AnalyseVarList(Treenode *p, FieldList *field){
 
 static FieldList *AnalyseParamDec(Treenode *p){
 	assert(name_equal(p, ParamDec));
+	//printf("l\n");
 	TYPE *type = AnalyseSpecifier(TreeFirstChild(p));
 	return AnalyseVarDec(TreeLastChild(p), type);
 }
 
 static void AnalyseCompSt(Treenode *p, FUNC *func){
 	assert(name_equal(p, CompSt));
+	//printf("m\n");
 	Treenode *deflist = TreeKthChild(p, 2);
-	Treenode *stmtlist = TreeKthChild(p, 3);
+	Treenode *stmtlist = TreeLastKthChild(p, 2);
 	SymbolStackPush();
 	if(func != NULL){
 		FieldList *q;
@@ -342,6 +356,7 @@ static void AnalyseCompSt(Treenode *p, FUNC *func){
 
 static void AnalyseStmtList(Treenode *p){
 	assert(name_equal(p, StmtList));
+	//printf("n\n");
 	Treenode *last = TreeLastChild(p);
 	AnalyseStmt(TreeFirstChild(p));
 	if(name_equal(last, StmtList)){
@@ -351,7 +366,9 @@ static void AnalyseStmtList(Treenode *p){
 
 static void AnalyseStmt(Treenode *p){
 	assert(name_equal(p, Stmt));
+	//printf("o\n");
 	Treenode *first = TreeFirstChild(p);
+	printf("a\n");
 	if(name_equal(first, Exp)){
 		AnalyseExp(first);
 	}
@@ -403,6 +420,7 @@ static Val RequireType(Treenode *p, TYPE *type, int ErrorType){
 
 static Val AnalyseExp(Treenode *p){
 	assert(name_equal(p, Exp));
+	//printf("p\n");
 	Treenode *first = TreeFirstChild(p);
 	Treenode *second = TreeKthChild(p, 2);
 	Treenode *last = TreeLastChild(p);
@@ -505,6 +523,7 @@ static Val AnalyseExp(Treenode *p){
 
 static void AnalyseArgs(Treenode *p, FieldList *args){
 	assert(name_equal(p, Args));
+	//printf("q\n");
 	Treenode *first = TreeFirstChild(p);
 	Treenode *last = TreeLastChild(p);
 	FieldList *arg = (FieldList *) malloc(sizeof(FieldList));

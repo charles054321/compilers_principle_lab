@@ -14,8 +14,13 @@ int main(int argc, char** argv){
 		perror(argv[1]);
 		return 1;
 	}
+	SymbolTableInit();
+	TypeInit();
 	yyrestart(f);
 	yyparse();
-	if (!errorstatus) AnalyseProgram(root);
+	if (!errorstatus){
+		//print(root, 0);	
+		AnalyseProgram(root);
+	}
 	return 0;
 }

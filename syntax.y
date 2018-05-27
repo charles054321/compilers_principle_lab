@@ -12,7 +12,7 @@
 	}while(0)
 	Treenode *asd(int location, int num, ...){
 		va_list valist; 
-		int i; 
+		int i, len = 0; 
 		va_start(valist, num); 
 		Treenode *p = newnode(); 
 		int flag = 0;
@@ -22,8 +22,21 @@
 				(*p).lineno = (*q).lineno;
 				flag = 1;
 			}
-			if(q != NULL) treeAddChild(p, q);
+			if(q != NULL) {
+				treeAddChild(p, q);
+				len += 1 + strlen(q->text);
+			}
 		}
+		Treenode *r;
+		char *s = p->text = malloc(len);
+		for (r = p->child;r != p->child->next;r = r->prev){
+			if(r != p->child) *(s++) = ' ';
+			strcpy(s, r->text);
+			s += strlen(s);
+		}
+		if(r != p->child) *(s++) = ' ';
+		strcpy(s, r->text);
+		s += strlen(s);
 		va_end(valist);
 		return p;
 	}
