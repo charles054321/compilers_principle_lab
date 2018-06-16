@@ -4,6 +4,7 @@
 #include<stdbool.h>
 #include"common.h"
 #include"symbol.h"
+#include"inter_code.h"
 
 #define MASK     0x3FFF
 #define SIZE     (MASK + 1)
@@ -192,6 +193,18 @@ void SymbolTableInit(){
 		listInit(SymbolTable + i);
 		listInit(stack + i);
 	}
+	FUNC *readfunc = NewFunc(TYPE_INT);
+	Symbol *read = NewFuncSymbol("read", readfunc);
+	SymbolInsert(read);
+	FUNC *writefunc = NewFunc(TYPE_INT);
+	FieldList *param = (FieldList *) malloc(sizeof(FieldList));
+	param->type = TYPE_INT;
+	param->prev = writefunc->args.prev;
+	param->next = &writefunc->args;
+	writefunc->args.prev->next = param;
+	writefunc->args.prev = param;
+	Symbol *write = NewFuncSymbol("write", writefunc);
+	SymbolInsert(write);
 }
 
 static unsigned hashPJW(const char *name) {
@@ -325,4 +338,40 @@ void ArgsToStr(FieldList *args, char *s) {
 		s += strlen(s);
 	}
 	*s = 0;
+}
+
+Operand *SymbolGetOperand(Symbol *symbol) {
+    if (symbol->id < 0) symbol->id = newVarOperandId();
+    return VarOperand(symbol->id);
+}
+
+int TypeSize(TYPE *type) {
+    assert(type != NULL);
+    int size = 0;
+    FieldList *p;
+    switch (type->kind) {
+    case BASIC:
+        return 4;
+    case ARRAY:
+        return TypeSize(type->array.elem) *type->array.size;
+    case STRUCTURE:
+        for(p = type->structure.next; p != &type->structure; p = p->next){
+            size += TypeSize(p->type);
+        }
+        return size;
+    }
+    return 0;
+}
+
+int FieldOffest(FieldList *structure, const char *fieldname) {
+    assert(structure != NULL);
+    assert(fieldname != NULL);
+    int offest = 0;
+    FieldList *p;
+    for(p = structure->next; p != structure; p = p->next){
+        FieldList *field = p;
+        if (strcmp(field->name, fieldname) == 0) return offest;
+        offest += TypeSize(field->type);
+    }
+    return -1;
 }

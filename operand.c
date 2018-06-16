@@ -1,4 +1,4 @@
-#include"inter-code.h"
+#include"inter_code.h"
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>

@@ -19,20 +19,19 @@ extern Operand *const CONST_ZERO;
 extern Operand *const CONST_ONE;
 
 void OperandInit();
-Operand *newOperand(OperandKind );
+Operand *newOperand(OperandKind);
 int newVarOperandId();
 int newTempOperandId();
 int newLabelOperandId();
-Operand *ConstOperand(int );
-Operand *VarOperand(int );
-Operand *TempOperand(int );
-Operand *LabelOperand(int );
 Operand *newVarOperand();
 Operand *newTempOperand();
 Operand *newLabelOperand();
-Operand *newFuncOperand(char *);
-
-char *OperandToStr(Operand *);
+Operand *newFuncOperand(char*);
+Operand *ConstOperand(int);
+Operand *VarOperand(int);
+Operand *TempOperand(int);
+Operand *LabelOperand(int);
+char *OperandToStr(Operand*);
 
 typedef enum{
 	DEF_LABEL, DEF_FUNCTION, ASSIGN, ADD, SUB, MUL, DIV,
@@ -50,10 +49,9 @@ typedef struct InterCode{
 	struct InterCode *prev, *next;
 }InterCode;
 
-InterCode *newInterCode(InterCodeKind , Operand *, Operand *, Operand *);
+InterCode *newInterCode(InterCodeKind, Operand *, Operand *, Operand *);
 InterCode *newInterCode_1op(InterCodeKind , Operand *, Operand *);
 InterCode *newInterCode_0op(InterCodeKind , Operand *);
-
 InterCode *newInterCode_chain();
 InterCode *InterCodeInsert(InterCode *, InterCode *);
 InterCode *InterCodeBind(InterCode *, InterCode *);

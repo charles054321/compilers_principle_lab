@@ -2,6 +2,7 @@
 #define COMPILERS_SYMBOL_H
 
 #include<stdbool.h>
+#include"inter_code.h"
 
 typedef enum{
 	BASIC, ARRAY, STRUCTURE
@@ -55,6 +56,8 @@ void ArgsRelease(FieldList *);
 
 void FuncRelease(FUNC *);
 
+int TypeSize(TYPE *);
+
 typedef struct Symbol{
 	char *name;
 	SymbolKind kind;
@@ -96,5 +99,9 @@ FieldList *FieldFind(FieldList *, const char *);
 void typeToStr(TYPE *, char *);
 
 void ArgsToStr(FieldList *, char *);
+
+Operand *SymbolGetOperand(Symbol *);
+
+int FieldOffest(FieldList *, const char *);
 
 #endif

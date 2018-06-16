@@ -73,7 +73,7 @@ InterCode *InterCodeBind(InterCode *first, InterCode *second){
 	return first;
 }
 
-void InterCodeToStr(InterCode *p, char *s) {
+void InterCodeToStr(InterCode *p, char *s){
 	assert(p != NULL);
 	assert(s != NULL);
 	if (p->kind == GOTO_WITH_COND) {
