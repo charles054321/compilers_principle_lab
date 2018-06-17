@@ -2,7 +2,7 @@
 #define COMPILERS_INTER_NODE_H
 
 typedef enum{
-	VARIABLE, TEMP, CONSTANT, LABEL, FUNCTION
+	VARIABLE, TEMP, CONSTANT, LABEL, FUNCT
 }OperandKind;
 
 typedef struct Operand{
@@ -47,7 +47,7 @@ typedef struct InterCode{
 		char *relop;
 		int size;
 	};
-	struct InterCode *prev, *next;
+	struct InterCode *child, *prev, *next;
 }InterCode;
 
 InterCode *newInterCode(InterCodeKind , Operand *, Operand *, Operand *);

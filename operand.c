@@ -76,7 +76,7 @@ Operand *newLabelOperand(){
 }
 
 Operand *newFuncOperand(char *s){
-	Operand *p = newOperand(FUNCTION);
+	Operand *p = newOperand(FUNCT);
 	p->name = s;
 	return p;
 }
@@ -90,7 +90,7 @@ Operand *newFuncOperand(char *s){
 
 char *OperandToStr(Operand *p){
 	if (p == NULL) return NULL;
-	if (p->text == NULL) return p->text;
+	//if (p->text == NULL) return p->text;
 	static char buf[30];
 	switch (p->kind){
 	case TEMP:
@@ -101,7 +101,7 @@ char *OperandToStr(Operand *p){
 		GetStr(p->text, "#%d", p->value);
 	case LABEL:
 		GetStr(p->text, "label%d", p->id);
-	case FUNCTION:
+	case FUNCT:
 		GetStr(p->text, "%s", p->name);
 	}
 	return NULL;

@@ -30,8 +30,8 @@ static const char *INTER_CODE[] = {
 InterCode *newInterCode(InterCodeKind kind, Operand *res, Operand *op1, Operand *op2){
 	static int cnt = 0;
 	InterCode *p = &IrsPool[cnt++];
-	p->kind = kindl
-	p->res = res;
+	p->kind = kind;
+	p->result = res;
 	p->op1 = op1;
 	p->op2 = op2;
 	return p;
@@ -77,15 +77,15 @@ void InterCodeToStr(InterCode *p, char *s){
 	assert(p != NULL);
 	assert(s != NULL);
 	if (p->kind == GOTO_WITH_COND) {
-	    sprintf(s, "IF %s %s %s GOTO %s", operandToStr(p->op1), p->relop,
-	            operandToStr(p->op2), operandToStr(p->res));
+	    sprintf(s, "IF %s %s %s GOTO %s", OperandToStr(p->op1), p->relop,
+	            OperandToStr(p->op2), OperandToStr(p->result));
 	}
 	else if (p->kind == DEC) {
-	    sprintf(s, "DEC %s %d", operandToStr(p->res), p->size);
+	    sprintf(s, "DEC %s %d", OperandToStr(p->result), p->size);
 	}
 	else {
-	    sprintf(s, INTER_CODE[p->kind], operandToStr(p->res),
-	            operandToStr(p->op1), operandToStr(p->op2));
+	    sprintf(s, INTER_CODE[p->kind], OperandToStr(p->result),
+	            OperandToStr(p->op1), OperandToStr(p->op2));
 	}
 }
 
@@ -94,7 +94,8 @@ void InterCodePrint(InterCode *head){
 	static char buf[120];
 	InterCode *i;
 	for(i = head->next; i != head; i = i->next){
-		InterCodeToStr(i, buf);
+		InterCode *intercode = i;
+		InterCodeToStr(intercode, buf);
 		printf("%s\n", buf);
 	}
 }

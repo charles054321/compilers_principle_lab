@@ -2,14 +2,24 @@
 #include"symbol.h"
 #include"common.h"
 #include<stdlib.h>
+#include"inter_code.h"
 
-static InterCode *head;
+static InterCode head;
 #define TRANSLATE_SIZE 10000
-static InterCode stack[TRANSLATE_SIZE];
+typedef struct List{
+	struct List *prev, *next;
+}List;
+
+static List stack[TRANSLATE_SIZE];
 static int top;
 
+typedef struct InterCodeList{
+	InterCode *head;
+	List list;
+}InterCodeList;
+
 void InterCodeInit(){
-	head->prev = head->next = head;
+	(&head)->prev = (&head)->next = &head;
 	stack->prev = stack->next = stack;
 	top = 0;
 }
@@ -24,19 +34,25 @@ void InterCodeStackPop(){
 }
 
 void InterCodeStackInsert(InterCode *Listhead){
-	Listhead->prev = (stack + top)->prev;
-	Listhead->next = stack + top;
-	if((stack + top)->prev != NULL) (stack + top)->prev->next = Listhead;
-	if(stack + top != NULL) (stack + top)->prev = Listhead;
+	InterCodeList *listnode = (InterCodeList *) malloc(sizeof(InterCodeList));
+	listnode->list.prev = (stack + top)->prev;
+	listnode->list.next = stack + top;
+	if((stack + top)->prev != NULL) (stack + top)->prev->next = &listnode->list;
+	if(stack + top != NULL) (stack + top)->prev = &listnode->list;
+	listnode->head = Listhead;
 }
 
 InterCode *InterCodeStackGet(){
 	assert(stack + top != (stack + top)->next);
-	return stack[top].next;
+	List *p = stack[top].next;
+	InterCodeList *listnode = ((InterCodeList*)((char*)(p) - (int)(&((InterCodeList*)0)->list)));
+	InterCode *listhead = listnode->head;
+	free(listnode);
+	return listhead;
 }
 
 InterCode *InterCodeGet(){
-	return head;
+	return &head;
 }
 
 void defParams(FUNC *func){
@@ -48,29 +64,25 @@ void defParams(FUNC *func){
 }
 
 void defFunc(char *name, InterCode *irs){
-	asTrsert(name != NULL);
+	assert(name != NULL);
 	Operand *op = newFuncOperand(name);
 	InterCode *ir = newInterCode_0op(DEF_FUNCTION, op);
-	InterCodeInsert(head, ir);
-	if(irs == irs->next || irs->kind != RETURN)
+	InterCodeInsert(&head, ir);
+	if(irs == irs->next || irs->prev->kind != RETURN){
 		ir = newInterCode_0op(RETURN, ConstOperand(-1));
 		InterCodeInsert(irs, ir);
 	}
-	InterCodeBind(head, irs);
+	InterCodeBind(&head, irs);
 }
 
-typedef struct List{
-	struct List *prev, *next;
-}List;
-
-static InterCode *translateDefList(Treenode*);
-static InterCode *translateDef(Treenode*);
-static InterCode *translateDecList(Treenode*);
-static InterCode *translateDec(Treenode*);
-static InterCode *translateStmtList(Treenode*);
-static InterCode *translateStmt(Treenode*);
-static InterCode *translateCond(Treenode*, Operand*, Operand*);
-static InterCode *translateArgs(Treenode*, List*, Args*);
+static InterCode *TranslateDefList(Treenode*);
+static InterCode *TranslateDef(Treenode*);
+static InterCode *TranslateDecList(Treenode*);
+static InterCode *TranslateDec(Treenode*);
+static InterCode *TranslateStmtList(Treenode*);
+static InterCode *TranslateStmt(Treenode*);
+static InterCode *TranslateCond(Treenode*, Operand*, Operand*);
+static InterCode *TranslateArgs(Treenode*, FieldList*, List*);
 
 #define name_equal(node, token) \
 	((node != NULL) && (strcmp((node)->name, #token) == 0))
@@ -82,7 +94,7 @@ InterCode *TranslateCompSt(Treenode *p, FUNC *func){
 		FieldList *i;
 		for(i = func->args.next; i != &func->args; i = i->next){
 			Symbol *symbol = SymbolFind(i->name);
-			Operand *op = VarOperand(Symbol->id);
+			Operand *op = VarOperand(symbol->id);
 			InterCode *ir = newInterCode_0op(PARAM, op);
 			InterCodeInsert(irs, ir);
 		}
@@ -98,13 +110,13 @@ InterCode *TranslateCompSt(Treenode *p, FUNC *func){
 
 typedef struct OperandList{
 	Operand *op;
-	List *list;
+	List list;
 }OperandList;
 
 static InterCode *TranslateDefList(Treenode *p) {
 	assert(name_equal(p, DefList));
-	InterCode *irs = TranslateDef(TreeFirstChild);
-	if (TreeLastChild == TreeKthChild(p, 2)) InterCodeBind(irs, TranslateDefList(TreeKthChild(p, 2)));
+	InterCode *irs = TranslateDef(TreeFirstChild(p));
+	if (name_equal(TreeLastChild(p), DefList)) InterCodeBind(irs, TranslateDefList(TreeKthChild(p, 2)));
 	return irs;
 }
 
@@ -115,8 +127,8 @@ static InterCode *TranslateDef(Treenode *p) {
 
 static InterCode *TranslateDecList(Treenode *p) {
 	assert(name_equal(p, DecList));
-	InterCode *irs = TranslateDec(TreeFirstChild);
-	if (name_equal(TreeKthChild(p, 3), DecList)) InterCodeBind(irs, TranslateDecList(TreeKthChild(p, 3));
+	InterCode *irs = TranslateDec(TreeFirstChild(p));
+	if (name_equal(TreeLastChild(p), DecList)) InterCodeBind(irs, TranslateDecList(TreeKthChild(p, 3)));
 	return irs;
 }
 
@@ -139,7 +151,7 @@ static InterCode *TranslateDec(Treenode *p) {
 	    ir->size = TypeSize(symbol->type);
 	    InterCodeInsert(irs, ir);
 	}
-	if (name_equal(last, exp)) {
+	if (name_equal(TreeLastChild(p), Exp)) {
 	    Operand *op = newTempOperand();
 	    InterCodeBind(irs, TranslateExp(last, op));
 	    InterCodeInsert(irs, newInterCode_1op(ASSIGN, var, op));
@@ -148,9 +160,9 @@ static InterCode *TranslateDec(Treenode *p) {
 }
 
 static InterCode *TranslateStmtList(Treenode *p) {
-	assert(name_equal(p,StmtList));
+	assert(name_equal(p, StmtList));
 	Treenode *first = TreeFirstChild(p);
-	Treenode *second = TreeKthChild(p, 2);
+	Treenode *second = TreeLastChild(p);
 	InterCode *irs = TranslateStmt(first);
 	if (name_equal(second, StmtList)) InterCodeBind(irs, TranslateStmtList(second));
 	return irs;
@@ -158,57 +170,60 @@ static InterCode *TranslateStmtList(Treenode *p) {
 
 static InterCode *TranslateStmt(Treenode *p) {
 	assert(name_equal(p, Stmt));
-	Treenode *First = TreeFirstChild(p);
+	Treenode *first = TreeFirstChild(p);
 	Treenode *c_3 = TreeKthChild(p, 3);
 	Treenode *c_5 = TreeKthChild(p, 5);
 	Treenode *c_7 = TreeKthChild(p, 7);
 	if (name_equal(first, Exp)) {
-	    return TranslateExp(first, NULL);
+		//printf("a\n");
+		return TranslateExp(first, NULL);
 	}
 	else if (name_equal(first, CompSt)) {
-	    return InterCodeStackGet();
+		return InterCodeStackGet();
 	}
-	else if (name_equal(First, RETURN)) {
-	    Operand *op = newTempOperand();
-	    InterCode *irs = TranslateExp(TreeKthChild(p, 2), op);
-	    InterCode *ir = newInterCode_0op(RETURN, op);
-	    InterCodeInsert(irs, ir);
-	    return irs;
+	else if (name_equal(first, RETURN)) {
+		Operand *op = newTempOperand();
+		InterCode *irs = TranslateExp(TreeKthChild(p, 2), op);
+		InterCode *ir = newInterCode_0op(RETURN, op);
+		InterCodeInsert(irs, ir);
+		return irs;
 	}
 	else if (name_equal(first, IF)) {
-	    bool el = name_equal(c_7, Stmt);
-	    Treenode *stmt1, *stmt2;
-	    stmt1 = c_5;
-	    if (el) stmt2 = c_7;
-	    else stmt2 = NULL;
-	    Operand *label1 = newLabelOperand();
-	    Operand *label2 = newLabelOperand();
-	    Operand *label3 = NULL;
-	    InterCode *irs = TranslateCond(c_3, label1, label2);
-	    InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label1));
-	    InterCodeBind(irs, TranslateStmt(stmt1));
-	    if (stmt2) {
-	        label3 = newLabelOperand();
-	        InterCodeInsert(irs, newInterCode_0op(GOTO, label3));
-	    }
-	    InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label2));
-	    if (stmt2) {
-	        InterCodeBind(irs, TranslateStmt(stmt2));
-	        InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label3));
-	    }
-	    return irs;
+		bool el = TreeLastChild(p) == TreeKthChild(p, 7);
+		Treenode *stmt1, *stmt2;
+		stmt1 = c_5;
+		if (el) stmt2 = c_7;
+		else stmt2 = NULL;
+		Operand *label1 = newLabelOperand();
+		Operand *label2 = newLabelOperand();
+		Operand *label3 = NULL;
+		InterCode *irs = TranslateCond(c_3, label1, label2);
+		InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label1));
+		//printf("a\n");
+		InterCode *i = TranslateStmt(stmt1);
+		InterCodeBind(irs, i);
+		if (stmt2) {
+			label3 = newLabelOperand();
+			InterCodeInsert(irs, newInterCode_0op(GOTO, label3));
+		}
+		InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label2));
+		if (stmt2) {
+			InterCodeBind(irs, TranslateStmt(stmt2));
+			InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label3));
+		}
+		return irs;
 	}
 	else {
-	    Operand *label1 = newLabelOperand();
-	    Operand *label2 = newLabelOperand();
-	    Operand *label3 = newLabelOperand();
-	    InterCode *irs = newInterCode_chain();
-	    InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label1));
-	    InterCodeBind(irs, translateCond(c_3, label2, label3));
-	    InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label2));
-	    InterCodeBind(irs, TranslateStmt(c_5));
-	    InterCodeInsert(irs, newInterCode_0op(GOTO, label1));
-	    return InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label3));
+		Operand *label1 = newLabelOperand();
+		Operand *label2 = newLabelOperand();
+		Operand *label3 = newLabelOperand();
+		InterCode *irs = newInterCode_chain();
+		InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label1));
+		InterCodeBind(irs, TranslateCond(c_3, label2, label3));
+		InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label2));
+		InterCodeBind(irs, TranslateStmt(c_5));
+		InterCodeInsert(irs, newInterCode_0op(GOTO, label1));
+		return InterCodeInsert(irs, newInterCode_0op(DEF_LABEL, label3));
 	}
 }
 
@@ -218,7 +233,7 @@ static InterCode *TranslateCond(Treenode *p, Operand *labeltrue,
 	assert(name_equal(p, Exp));
 	Treenode *first = TreeFirstChild(p);
 	Treenode *second = TreeKthChild(p, 2);
-	Treenode *third = TreeKthChlid(p, 3);
+	Treenode *third = TreeKthChild(p, 3);
 	if (name_equal(first, NOT)) {
 		return TranslateCond(second, labelfalse, labeltrue);
 	}
@@ -264,14 +279,14 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 	static TYPE *type = NULL;
 	InterCode *irs = newInterCode_chain();
 	if (name_equal(first, ID)) {
-		Symbol *symbol = symbolFind(first->text);
-		if (first == TreeLastChild(p)) {
+		Symbol *symbol = SymbolFind(first->text);
+		if (name_equal(TreeLastChild(p), ID)) {
 			if (res == NULL) return irs;
 			Operand *op = SymbolGetOperand(symbol);
 			type = symbol->type;
 			if (res->id < 0 && type->kind != BASIC) {
 				res->id = newTempOperandId();
-				if (symbol->isref) {
+				if (symbol->isRef) {
 					InterCodeInsert(irs, newInterCode_1op(ASSIGN, res, op));
 				}
 				else {
@@ -283,12 +298,12 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 			}
 		}
 		else {
-			assert(symbol->kind == FUNC);
-			List *args;
-			args->prev = args->next = args;
+			assert(symbol->kind == FUNCTION);
+			List args;
+			(&args)->prev = (&args)->next = &args;
 			if (name_equal(third, Args)) {
 				FieldList *firstarg = symbol->func->args.next;
-				InterCodeBind(irs, TranslateArgs(third, firstarg, args));
+				InterCodeBind(irs, TranslateArgs(third, firstarg, &args));
 			}
 			if (strcmp(symbol->name, "read") == 0) {
 				if (!res) res = newTempOperand();
@@ -296,7 +311,7 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 				InterCodeInsert(irs, ir);
 			}
 			else if (strcmp(symbol->name, "write") == 0) {
-				Operand *op = (OperandList*)((char*)(args->next) - (int)(&((OperandList*)0)->list));
+				Operand *op = ((OperandList*)((char*)(args.next) - (int)(&((OperandList*)0)->list)))->op;
 				InterCode *ir = newInterCode_0op(WRITE, op);
 				InterCodeInsert(irs, ir);
 				if (res) {
@@ -306,22 +321,23 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 				}
 			}
 			else {
-			FieldList *q;
-	        	for(q = args->next; q != args; q = q->next){
-	        		Operand *op = (OperandList*)((char*)(q) - (int)(&((OperandList*)0)->list));
-	        		InterCode *ir = newInterCode_0op(ARG, op);
+				List *q;
+	        		for(q = (&args)->next; q != (&args); q = q->next){
+	        			Operand *op = ((OperandList*)((char*)(q) - (int)(&((OperandList*)0)->list)))->op;
+	        			InterCode *ir = newInterCode_0op(ARG, op);
+	        			InterCodeInsert(irs,ir);
+	        		}
+	        		if (!res) res = newTempOperand();
+	        		Operand *op = newFuncOperand(first->text);
+	        		InterCode *ir = newInterCode_1op(CALL, res, op);
 	        		InterCodeInsert(irs,ir);
 	        	}
-	        	if (!res) res = newTempOperand();
-	        	Operand *op = newFuncOperand(first->text);
-	        	InterCode *ir = newInterCode_1op(CALL, res, op);
-	        	InterCodeInsert(irs,ir);
-	        	}
-	        	while (args->next != args) {
-				FieldList *q = args->next;
-	        		OperandList *operandnode = (OperandList*)((char*)(q) - (int)(&((OperandList*)0)->list));
-				q->prev->next = q->next;
-				q->next->prev = q->prev;
+	        	while (args.next != &args) {
+				List *q = (&args)->next;
+	        		OperandList *operandnode = ((OperandList*)((char*)(q) - (int)(&((OperandList*)0)->list)));
+				List *prev = q->prev, *next = q->next;
+				if (prev != NULL) prev->next = next;
+				if (next != NULL) next->prev = prev;
 	       			free(operandnode);
 	       		}
 	     	type = symbol->func->retType;
@@ -340,7 +356,7 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 		assert(type->kind == ARRAY);
 		type = type->array.elem;
 		Operand *offest = newTempOperand();
-		Operand *size = ConstOperand(typeSize(type));
+		Operand *size = ConstOperand(TypeSize(type));
 		InterCodeInsert(irs, newInterCode(MUL, offest, index, size));
 		if (res->id < 0) {
 			res->id = newTempOperandId();
@@ -397,7 +413,7 @@ InterCode *TranslateExp(Treenode *p, Operand *res) {
 		InterCodeInsert(irs, ir);
 	}
 	else if (name_equal(second, ASSIGNOP)) {
-		Operand *op1 = tempOperand(-1);
+		Operand *op1 = TempOperand(-1);
 		Operand *op2 = newTempOperand();
 		InterCode *irs1 = TranslateExp(first, op1);
 		InterCode *irs2 = TranslateExp(third, op2);
@@ -440,17 +456,17 @@ static InterCode *TranslateArgs(Treenode *p, FieldList *curarg, List *args) {
 	Treenode *last = TreeKthChild(p, 3);
 	InterCode *restirs = NULL;
 	if (name_equal(last, Args))
-		restirs = TranslateArgs(third, curarg->next, args);
+		restirs = TranslateArgs(last, curarg->next, args);
 	FieldList *arg = curarg;
 	Operand *op = (arg->type->kind == BASIC) ? newTempOperand() : TempOperand(-1);
-	InterCode *irs = TranslateExp(First, op);
+	InterCode *irs = TranslateExp(first, op);
 	if (restirs) irs = InterCodeBind(restirs, irs);
 	OperandList *operandnode = (OperandList*) malloc(sizeof(OperandList));
 	operandnode->op = op;
-	operandnode->list->prev = args->prev;
-	operandnode->list->next = args;
-	args->prev->next = operandnode->list;
-	args->prev = operandnode->list;
+	(&operandnode->list)->prev = args->prev;
+	(&operandnode->list)->next = args;
+	args->prev->next = (&operandnode->list);
+	args->prev = (&operandnode->list);
 	return irs;
 }
 

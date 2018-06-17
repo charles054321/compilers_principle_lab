@@ -4,6 +4,8 @@
 #include"symbol.h"
 #include"syntax_tree.h"
 #include"common.h"
+#include"translate.h"
+#include"inter_code.h"
 
 #define name_equal(node, token) \
 	((node != NULL) && (strcmp((node)->name, #token) == 0))
@@ -124,6 +126,8 @@ static void AnalyseExtDef(Treenode *p){
 		if(isDef){
 			AnalyseCompSt(last, func);
 			func->defined = true;
+			InterCode *irs = InterCodeStackGet();
+			defFunc(symbol->name, irs);
 		}
 	}
 }
@@ -336,6 +340,7 @@ static void AnalyseCompSt(Treenode *p, FUNC *func){
 	Treenode *deflist = TreeKthChild(p, 2);
 	Treenode *stmtlist = TreeLastKthChild(p, 2);
 	SymbolStackPush();
+	InterCodeStackPush();
 	if(func != NULL){
 		FieldList *q;
 		for(q = (&(func->args))->next;q != &(func->args);q = q->next){
@@ -351,6 +356,9 @@ static void AnalyseCompSt(Treenode *p, FUNC *func){
 	if(name_equal(stmtlist, StmtList)){
 		AnalyseStmtList(stmtlist);
 	}
+	InterCode *irs = TranslateCompSt(p, func);
+	InterCodeStackPop();
+	InterCodeStackInsert(irs);
 	SymbolStackPop();
 }
 
@@ -368,7 +376,6 @@ static void AnalyseStmt(Treenode *p){
 	assert(name_equal(p, Stmt));
 	//printf("o\n");
 	Treenode *first = TreeFirstChild(p);
-	printf("a\n");
 	if(name_equal(first, Exp)){
 		AnalyseExp(first);
 	}

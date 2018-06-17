@@ -29,7 +29,7 @@ int main(int argc, char** argv){
 	yyrestart(f);
 	yyparse();
 	if (!errorstatus){
-		//print(root, 0);	
+		//print(root, 0);
 		AnalyseProgram(root);
 		InterCodePrint(InterCodeGet());
 	}
