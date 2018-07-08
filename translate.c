@@ -10,6 +10,12 @@ typedef struct List{
 	struct List *prev, *next;
 }List;
 
+void listDelete(List *node) {
+	List *prev = node->prev, *next = node->next;
+	if (prev != NULL) prev->next = next;
+	if (next != NULL) next->prev = prev;
+}
+
 static List stack[TRANSLATE_SIZE];
 static int top;
 
@@ -17,6 +23,10 @@ typedef struct InterCodeList{
 	InterCode *head;
 	List list;
 }InterCodeList;
+
+InterCode *GetInterCodeHead(){
+	return &head;
+}
 
 void InterCodeInit(){
 	(&head)->prev = (&head)->next = &head;
@@ -46,6 +56,7 @@ InterCode *InterCodeStackGet(){
 	assert(stack + top != (stack + top)->next);
 	List *p = stack[top].next;
 	InterCodeList *listnode = ((InterCodeList*)((char*)(p) - (int)(&((InterCodeList*)0)->list)));
+	listDelete(p);
 	InterCode *listhead = listnode->head;
 	free(listnode);
 	return listhead;
@@ -89,6 +100,7 @@ static InterCode *TranslateArgs(Treenode*, FieldList*, List*);
 
 InterCode *TranslateCompSt(Treenode *p, FUNC *func){
 	assert(name_equal(p, CompSt));
+	//printf("z\n");
 	InterCode *irs = newInterCode_chain();
 	if(func != NULL){
 		FieldList *i;

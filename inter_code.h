@@ -60,6 +60,8 @@ InterCode *InterCodeBind(InterCode *, InterCode *);
 void InterCodeToStr(InterCode *, char *);
 void InterCodePrint(InterCode *);
 
+InterCode *GetInterCodeHead();
+
 #endif
 
 

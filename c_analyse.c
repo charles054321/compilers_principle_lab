@@ -106,6 +106,7 @@ static void AnalyseExtDefList(Treenode *p){
 	Treenode *next = TreeLastChild(p);
 	if(name_equal(next, ExtDefList))
 		AnalyseExtDefList(next);
+	//printf("b\n");
 }
 
 static void AnalyseExtDef(Treenode *p){
@@ -130,6 +131,7 @@ static void AnalyseExtDef(Treenode *p){
 			defFunc(symbol->name, irs);
 		}
 	}
+	//printf("c\n");
 }
 
 static void AnalyseExtDecList(Treenode *p, TYPE *type){
@@ -360,6 +362,7 @@ static void AnalyseCompSt(Treenode *p, FUNC *func){
 	InterCodeStackPop();
 	InterCodeStackInsert(irs);
 	SymbolStackPop();
+	//printf("m\n");
 }
 
 static void AnalyseStmtList(Treenode *p){
@@ -379,7 +382,7 @@ static void AnalyseStmt(Treenode *p){
 	if(name_equal(first, Exp)){
 		AnalyseExp(first);
 	}
-	else if(name_equal(first, ComSt)){
+	else if(name_equal(first, CompSt)){
 		AnalyseCompSt(first, NULL);
 	}
 	else if(name_equal(first, RETURN)){

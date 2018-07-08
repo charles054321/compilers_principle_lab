@@ -3,6 +3,7 @@
 #include<assert.h>
 #include"syntax_tree.h"
 #include"translate.h"
+#include"mips.h"
 extern FILE *yyin;
 void yyrestart();
 void yyparse();
@@ -14,6 +15,7 @@ void init(){
 	TypeInit();
 	OperandInit();
 	InterCodeInit();
+	MipsInit();
 }
 
 int main(int argc, char** argv){
@@ -31,7 +33,8 @@ int main(int argc, char** argv){
 	if (!errorstatus){
 		//print(root, 0);
 		AnalyseProgram(root);
-		InterCodePrint(InterCodeGet());
+		//InterCodePrint(InterCodeGet());
+		MipsMainLoop();
 	}
 	return 0;
 }
